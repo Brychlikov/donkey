@@ -25,6 +25,26 @@ class PCA9685:
     def run(self, pulse):
         self.set_pulse(pulse)
 
+
+class RaspberryPi_PWM:
+    """
+    Replacement for PCA9685. Utilizes pigpio library instead of additional board.
+    """
+    def __init__(self, channel, frequency=60):
+        import pigpio
+        self.pi = pigpio.pi()
+        self.channel = channel
+
+        # Even if this will work, it will only use some approximate frequency
+        # self.pi.set_servo_frequency(self.channel, frequency)
+
+    def set_pulse(self, pulse):
+        self.pi.set_servo_pulsewidth(self.channel, pulse)
+
+    def run(self, pulse):
+        self.set_pulse(pulse)
+
+
 class PWMSteering:
     """
     Wrapper over a PWM motor cotnroller to convert angles to PWM pulses.
