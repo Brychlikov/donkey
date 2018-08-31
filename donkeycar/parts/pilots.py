@@ -5,16 +5,24 @@ import numpy as np
 
 class LineFollower:
 
-    def __init__(self, polling=5, width=3, middle=None):
+    def __init__(self, polling=5, width=3, middle=None, flip=False):
         self.polling = polling
         self.width = width
         self.middle = middle
+        self.flip = flip
 
     def run(self, img):
 
+        # def green_heuristic(v):
+        #     v = v / np.linalg.norm(v)
+        #     return v[1]
+
+        def green_for_line(r):
+            return  [green_heuristic(x) for x in r]
+
         def green_heuristic(v):
-            v = v / np.linalg.norm(v)
-            return v[1]
+            r, g, b = v
+            return g / (r*r + g*g + b*b) ** 0.5
 
         def find_line(row):
             part = np.argpartition(row, -5)
@@ -29,25 +37,27 @@ class LineFollower:
             result = line
             return np.mean(result)
 
-        def mask_to_angle(m):
-            row = m[0]
-            line_coord = find_line(row)
-            delta = len(row / 2) - line_coord if self.middle is none else \
-            self.middle - line_coord
 
-            angle = delta / 100 * -2 if self.flip else delta / 100 * 2
-            if angle > 1:
-                angle = 1
-            elif angle < -1:
-                angle = -1
-            return angle
+        #mask = np.apply_along_axis(green_heuristic, 2, img)
 
-        img = img[:30, :, :]
+        mask = [green_for_line(r) for r in img]
 
-        mask = np.apply_along_axis(green_heuristic, 2, img)
-        mask = (mask ** 1 * 255).astype('uint8')
+        middle = self.middle if self.middle is not None else len(mask[0]) / 2
+        line_coords = [find_line(row) for row in mask]
+        deltas = [middle - lc for lc in line_coords]
 
-        return mask_to_angle(mask)
+        angle = 0
+        for i, d in enumerate(deltas):
+            angle += d / (i + 1)
+
+        angle = angle / -100 if self.flip else angle / 100
+        if angle > 1:
+            angle = 1
+        elif angle < -1:
+            angle = -1
+
+        return angle, line_coords
+
 
 if __name__ == '__main__':
 
@@ -55,7 +65,6 @@ if __name__ == '__main__':
     data = t.get_record(400)
     img = data['cam/image_array']
     img = img[:30, :, :]
-    
     
     mask = np.apply_along_axis(green_heuristic, 2, img)
     mask = (mask ** 1 * 255).astype('uint8')
