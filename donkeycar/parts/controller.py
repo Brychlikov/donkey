@@ -299,7 +299,7 @@ class JoystickController(object):
                     self.mode = 'user'
                 print('new mode:', self.mode)
 
-            if button == 'circle' and button_state == 1:
+            if (button == 'circle' or button == 'b') and button_state == 1:
                 """
                 toggle recording on/off
                 """
@@ -312,7 +312,7 @@ class JoystickController(object):
 
                 print('recording:', self.recording)
 
-            if button == 'triangle' and button_state == 1:
+            if (button == 'triangle' or button == 'y') and button_state == 1:
                 """
                 increase max throttle setting
                 """
@@ -323,7 +323,7 @@ class JoystickController(object):
 
                 print('max_throttle:', self.max_throttle)
 
-            if button == 'cross' and button_state == 1:
+            if (button == 'cross' or button == 'a') and button_state == 1:
                 """
                 decrease max throttle setting
                 """
