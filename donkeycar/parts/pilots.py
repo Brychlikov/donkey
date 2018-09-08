@@ -22,6 +22,9 @@ class LineFollower:
 
         def green_heuristic(v):
             r, g, b = v
+            r, g, b = int(r), int(g), int(b)
+            if r + g + b == 0:
+                return 0
             return g / (r*r + g*g + b*b) ** 0.5
 
         def find_line(row):
@@ -50,13 +53,13 @@ class LineFollower:
         for i, d in enumerate(deltas):
             angle += d / (i + 1)
 
-        angle = angle / -100 if self.flip else angle / 100
+        angle = angle / -150 if self.flip else angle / 150
         if angle > 1:
             angle = 1
         elif angle < -1:
             angle = -1
 
-        return angle, line_coords
+        return angle, repr(line_coords)
 
 
 if __name__ == '__main__':

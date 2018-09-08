@@ -17,9 +17,10 @@ cfg = load_config('/home/pi/fork_car/config.py')
 
 cam = PiCamera(resolution=cfg.CAMERA_RESOLUTION)
 v.add(cam, outputs=['raw_img_array'], threaded=True)
-v.add(Lambda(crop_image), inputs=['const_lines', 'const_every_other', 'raw_img_array'], outputs=['img_array'])
+
 v.mem['const_ines'] = 40
 v.mem['const_every_other'] = 5
+v.add(Lambda(crop_image), inputs=['raw_img_array', 'const_lines', 'const_every_other'], outputs=['img_array'])
 
 v.add(LineFollower(), inputs=['img_array'], outputs=['angle', 'found_lines'])
 
@@ -37,10 +38,11 @@ throttle = PWMThrottle(controller=throttle_controller,
 
 v.add(steering, inputs=['angle'])
 v.add(throttle, inputs=['const'])
-v.mem['const'] = 0.55
+v.mem['const'] = 0.51
 
 inputs = ['img_array', 'angle', 'throttle', 'found_lines']
-types = ['image_array', 'float', 'float', 'array']
+types = ['image_array', 'float', 'float', 'str']
+
 t = TubWriter(path=cfg.TUB_PATH, inputs=inputs, types=types)
 v.add(t, inputs=inputs)
 
