@@ -4,6 +4,8 @@ Classes to control the motors and servos. These classes
 are wrapped in a mixer class before being used in the drive loop.
 """
 
+import serial
+import struct
 import time
 import donkeycar as dk
 
@@ -44,6 +46,57 @@ class RaspberryPi_PWM:
     def run(self, pulse):
         self.set_pulse(pulse)
 
+        
+class BluePill:
+    """
+    Control and read user commands from the 
+    """
+    MASK_ANGLE = 0x01
+    MASK_THROTTLE = 0x02
+    MODES = {
+        'user': 0x00,
+        'local_angle': MASK_ANGLE,
+        'local_throttle': MASK_THROTTLE,
+        'local': MASK_THROTTLE + MASK_ANGLE
+    }
+    MODES_INV = {v:k for k,v in MODES.items()}
+
+    def __init__(self, port,
+                 angle_neutral=4350, angle_gain=900,
+                 throttle_neutral=4368, throttle_gain=1000, throttle_clip=1.0):
+        self.s = serial.Serial(port)
+        self.angle_neutral = angle_neutral
+        self.angle_gain= angle_gain * 1.0
+        self.throttle_neutral = throttle_neutral
+        self.throttle_gain = throttle_gain * 1.0
+        self.throttle_max = throttle_clip * throttle_gain + throttle_neutral
+        self.last_mode = None
+
+    def run(self, pilot_angle, pilot_throttle, mode):
+        auto_enable = 0
+        auto_nreset = 0
+        if mode != self.last_mode:
+            auto_enable = self.MODES[mode]
+            auto_nreset = ~auto_enable & 0x03
+            self.last_mode = mode
+        if pilot_angle is None:
+            pilot_angle = 0.0
+        if pilot_throttle is None:
+            pilot_throttle = 0.0
+        pilot_angle = pilot_angle * self.angle_gain + self.angle_neutral
+        pilot_throttle = pilot_throttle * self.throttle_gain + self.throttle_neutral
+        pilot_throttle = min(pilot_throttle, self.throttle_max)
+        
+        # print("BP debug tx: ", pilot_angle, pilot_throttle, auto_enable, auto_nreset)
+        msg = struct.pack("<HHBB", int(pilot_angle), int(pilot_throttle), auto_enable, auto_nreset)
+        self.s.write(msg)
+        msg = self.s.read(6)
+        user_angle, user_throttle, user_mode, _ = struct.unpack("<HHBB", msg)
+        # print("BP debug rx: ", user_angle, user_throttle, self.MODES_INV[user_mode])
+        user_angle = (user_angle - self.angle_neutral) / self.angle_gain
+        user_throttle = (user_throttle - self.throttle_neutral) / self.throttle_gain
+        # print("BP ret:", user_angle, user_throttle, self.MODES_INV[user_mode])
+        return user_angle, user_throttle, self.MODES_INV[user_mode]
 
 class PWMSteering:
     """
