@@ -72,6 +72,8 @@ class BluePill:
         self.throttle_max = throttle_clip * throttle_gain + throttle_neutral
         self.last_mode = None
 
+        self.previous_args = 0, 0, 'user'  # for use in wrappers
+
     def run(self, pilot_angle, pilot_throttle, mode):
         auto_enable = 0
         auto_nreset = 0
@@ -97,6 +99,43 @@ class BluePill:
         user_throttle = (user_throttle - self.throttle_neutral) / self.throttle_gain
         # print("BP ret:", user_angle, user_throttle, self.MODES_INV[user_mode])
         return user_angle, user_throttle, self.MODES_INV[user_mode]
+
+    def shutdown(self):
+        self.run(0, 0, 'user')
+
+
+class BluePillWriter:
+    "Wrapper over BluePill class to provide more readable code when only the write functionality is needed"
+
+    def __init__(self, bp):
+
+        self.bp = bp
+
+    def run(self, *args):
+        self.bp.previous_args = args
+        self.bp.run(*args)
+
+    def shutdown(self):
+        try:
+            self.bp.shutdown()
+        except AttributeError:
+            pass
+
+
+class BluePillReader:
+
+    def __init__(self, bp):
+        self.bp = bp
+
+    def run(self):
+        return self.bp(*self.bp.previous_args)
+
+    def shutdown(self):
+        try:
+            self.bp.shutdown()
+        except AttributeError:
+            pass
+        
 
 class PWMSteering:
     """
