@@ -199,7 +199,9 @@ class JoystickController(object):
     def __init__(self, poll_delay=0.0,
                  max_throttle=1.0,
                  steering_axis='x',
+                 steering_unidirectional=False,
                  throttle_axis='rz',
+                 throttle_unidirectional=False,
                  steering_scale=1.0,
                  throttle_scale=-1.0,
                  dev_fn='/dev/input/js0',
@@ -215,6 +217,10 @@ class JoystickController(object):
         self.throttle_axis = throttle_axis
         self.steering_scale = steering_scale
         self.throttle_scale = throttle_scale
+        self.throttle_unidirectional = throttle_unidirectional
+        self.throttle_flip = 1 # 1 means disabled, as throttle will be multiplied by this value
+        self.steering_unidirectional = steering_unidirectional
+        self.steering_flip = 1
         self.recording = False
         self.constant_throttle = False
         self.auto_record_on_throttle = auto_record_on_throttle
@@ -276,15 +282,23 @@ class JoystickController(object):
 
             if axis == self.steering_axis:
                 self.angle = self.steering_scale * axis_val
+
+                if self.steering_unidirectional:
+                    self.angle = (self.angle + 1) / 2
+                self.angle *= self.steering_flip
                 print("angle", self.angle)
 
             if axis == self.throttle_axis:
                 #this value is often reversed, with positive value when pulling down
-                self.throttle = (self.throttle_scale * axis_val * self.max_throttle)
+                if self.throttle_unidirectional:
+                    self.throttle = ((axis_val + 1) / 2) * self.throttle_scale * self.max_throttle
+                else:
+                    self.throttle = (self.throttle_scale * axis_val * self.max_throttle)
+                self.throttle *= self.throttle_flip
                 print("throttle", self.throttle)
                 self.on_throttle_changes()
 
-            if button == 'trigger' and button_state == 1:
+            if button == 'thumbr' and button_state == 1:
                 """
                 switch modes from:
                 user: human controlled steer and throttle
@@ -375,6 +389,11 @@ class JoystickController(object):
                     self.throttle = self.max_throttle
                     self.on_throttle_changes()
                 print('constant_throttle:', self.constant_throttle)
+
+            if button =='tr' and button_state == 1:
+                self.throttle_flip = -1
+            if button == 'tr' and button_state == 0:
+                self.throttle_flip = 1
 
             time.sleep(self.poll_delay)
 
