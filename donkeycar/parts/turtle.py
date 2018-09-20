@@ -1,10 +1,19 @@
 class RouteWriter:
     def __init__(self):
         self.route = []
+        self.going_back = False
 
     def forward(self, throttle, ticks):
         """Set car's throttle for given amount of ticks"""
         self.route.extend([{'type': 'throttle', 'value': throttle} for i in range(ticks)])
+        self.going_back = False
+
+    def backward(self, throttle, ticks):
+        if not self.going_back:
+            self.route.append({'type': 'throttle', 'value': -1})
+            self.route.append({'type': 'throttle', 'value': 0})
+            self.going_back = True
+        self.route.extend([{'type': 'throttle', 'value': -throttle} for i in range(ticks)])
 
     def turn(self, angle):
         """Set car's angle for a given amount of ticks"""
@@ -40,6 +49,7 @@ class RouteReader:
             angle = self.prev_angle
 
             self.current_index += 1
+            print(angle, throttle)
             return angle, throttle
         except IndexError:
             return 0, 0
