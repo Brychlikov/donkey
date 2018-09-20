@@ -109,7 +109,7 @@ class BluePill:
         user_angle = (user_angle - self.angle_neutral) / self.angle_gain
         user_throttle = (user_throttle - self.throttle_neutral) / self.throttle_gain
         user_mode = self.MODES_INV[user_mode]
-        print("BP ret: %10f %10f %10s %10d" %(user_angle, user_throttle, user_mode, dist))
+        # print("BP ret: %10f %10f %10s %10d" %(user_angle, user_throttle, user_mode, dist))
         return user_angle, user_throttle, user_mode, dist
 
     def shutdown(self):
